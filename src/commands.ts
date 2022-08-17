@@ -1,4 +1,4 @@
-export const ADD = {
-    name: "add",
+export const STASH = {
+    name: "stash",
     description: "Adds a word to my vocabulary."
 }

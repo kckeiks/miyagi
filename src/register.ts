@@ -1,4 +1,4 @@
-import { ADD } from './commands.js';
+import { STASH } from './commands.js';
 import fetch from 'node-fetch';
 
 /**
@@ -27,25 +27,25 @@ if (!applicationId) {
  * development and testing.
  */
 // eslint-disable-next-line no-unused-vars
-// async function registerGuildCommands() {
-//     if (!testGuildId) {=
-//         throw new Error(
-//             'The DISCORD_TEST_GUILD_ID environment variable is required.'
-//         );
-//     }
-//     const url = `https://discord.com/api/v10/applications/${applicationId}/guilds/${testGuildId}/commands`;
-//     const res = await registerCommands(url);
-//     const json = await res.json();
-//     console.log(json);
-//     json.forEach(async (cmd) => {
-//         const response = await fetch(
-//             `https://discord.com/api/v10/applications/${applicationId}/guilds/${testGuildId}/commands/${cmd.id}`
-//         );
-//         if (!response.ok) {
-//             console.error(`Problem removing command ${cmd.id}`);
-//         }
-//     });
-// }
+async function registerGuildCommands() {
+    if (!testGuildId) {
+        throw new Error(
+            'The DISCORD_TEST_GUILD_ID environment variable is required.'
+        );
+    }
+    const url = `https://discord.com/api/v10/applications/${applicationId}/guilds/${testGuildId}/commands`;
+    const res = await registerCommands(url);
+    const json = await res.json();
+    console.log(json);
+    json.forEach(async (cmd) => {
+        const response = await fetch(
+            `https://discord.com/api/v10/applications/${applicationId}/guilds/${testGuildId}/commands/${cmd.id}`
+        );
+        if (!response.ok) {
+            console.error(`Problem removing command ${cmd.id}`);
+        }
+    });
+}
 
 /**
  * Register all commands globally.  This can take o(minutes), so wait until
@@ -64,7 +64,7 @@ async function registerCommands(url: string) {
             Authorization: `Bot ${token}`,
         },
         method: 'PUT',
-        body: JSON.stringify([ADD]),
+        body: JSON.stringify([STASH]),
     });
 
     if (response.ok) {
@@ -77,8 +77,36 @@ async function registerCommands(url: string) {
     return response;
 }
 
+async function getGuildCommands() {
+    const url = `https://discord.com/api/v10/applications/${applicationId}/commands/1009487002787393586`;
+    const res = await sendCommand(url, 'DELETE');
+    const json = await res.json();
+    console.log(json)
+}
+
+async function sendCommand(url: string, method: string) {
+    const response = await fetch(url, {
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bot ${token}`,
+        },
+        method: method,
+    });
+
+    if (response.ok) {
+        console.log('fetch succeeded');
+    } else {
+        console.error('fetch failed');
+        const text = await response.text();
+        console.error(text);
+    }
+    return response;
+}
+
 async function run() {
-    await registerGlobalCommands();
+    // await registerGlobalCommands();
+    await registerGuildCommands();
+    // await getGuildCommands()
 }
 
 run();
