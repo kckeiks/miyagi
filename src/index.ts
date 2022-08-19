@@ -7,18 +7,38 @@
  *
  * Learn more at https://developers.cloudflare.com/workers/
  */
-
-import {Router, Route, IHTTPMethods} from 'itty-router'
+import {Router, IHTTPMethods} from 'itty-router'
 import {
     verifyKey,
     InteractionType,
     InteractionResponseType
 } from 'discord-interactions'
 
-const router = Router<void, IHTTPMethods>()
+const router = Router<Request, IHTTPMethods>()
+
+export interface Env {
+    // Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
+    // MY_KV_NAMESPACE: KVNamespace;
+    //
+    // Example binding to Durable Object. Learn more at https://developers.cloudflare.com/workers/runtime-apis/durable-objects/
+    // MY_DURABLE_OBJECT: DurableObjectNamespace;
+    //
+    // Example binding to R2. Learn more at https://developers.cloudflare.com/workers/runtime-apis/r2/
+    // MY_BUCKET: R2Bucket;
+    DISCORD_PUBLIC_KEY: string;
+}
+
+type DiscordRequest = {
+    type: InteractionType
+}
+
+type DiscordResponse = {
+    type: InteractionResponseType
+    data?: Object
+}
 
 class JsonResponse extends Response {
-    constructor(body, init) {
+    constructor(body: DiscordResponse, init?: ResponseInit) {
         const jsonBody = JSON.stringify(body);
         init = init || {
             headers: {
@@ -29,19 +49,14 @@ class JsonResponse extends Response {
     }
 }
 
-
 router.get('/', async (_request, _env) => {
     return new Response("Cheers!");
 })
 
-router.post('/', async (request, _env) => {
-    const message = await request.json();
-    console.log(message);
+router.post('/', async (request: Request, _env) => {
+    const message: DiscordRequest = await request.json();
 
     if (message.type === InteractionType.PING) {
-        // The `PING` message is used during the initial webhook handshake, and is
-        // required to configure the webhook in the developer portal.
-        console.log('Handling Ping request');
         return new JsonResponse({
             type: InteractionResponseType.PONG,
         });
@@ -54,17 +69,6 @@ router.post('/', async (request, _env) => {
     });
 })
 
-export interface Env {
-    // Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
-    // MY_KV_NAMESPACE: KVNamespace;
-    //
-    // Example binding to Durable Object. Learn more at https://developers.cloudflare.com/workers/runtime-apis/durable-objects/
-    // MY_DURABLE_OBJECT: DurableObjectNamespace;
-    //
-    // Example binding to R2. Learn more at https://developers.cloudflare.com/workers/runtime-apis/r2/
-    // MY_BUCKET: R2Bucket;
-}
-
 export default {
     async fetch(
         request: Request,
@@ -72,10 +76,8 @@ export default {
         ctx: ExecutionContext
     ): Promise<Response> {
         if (request.method === 'POST') {
-            // Using the incoming headers, verify this request actually came from discord.
-            const signature = request.headers.get('x-signature-ed25519');
-            const timestamp = request.headers.get('x-signature-timestamp');
-            console.log(signature, timestamp, env.DISCORD_PUBLIC_KEY);
+            const signature = request.headers.get('x-signature-ed25519') || '';
+            const timestamp = request.headers.get('x-signature-timestamp') || '';
             const body = await request.clone().arrayBuffer();
             const isValidRequest = verifyKey(
                 body,
@@ -84,11 +86,9 @@ export default {
                 env.DISCORD_PUBLIC_KEY
             );
             if (!isValidRequest) {
-                console.error('Invalid Request');
                 return new Response('Bad request signature.', {status: 401});
             }
         }
-
         return router.handle(request, env);
     },
 };
