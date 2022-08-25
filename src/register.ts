@@ -1,4 +1,4 @@
-import { STASH } from './commands.js';
+import {STASH} from './commands.js';
 import fetch from 'node-fetch';
 
 /**
@@ -78,6 +78,13 @@ async function registerCommands(url: string) {
 }
 
 async function getGuildCommands() {
+    const url = `https://discord.com/api/v10/applications/${applicationId}/commands/1009487002787393586`;
+    const res = await sendCommand(url, 'GET');
+    const json = await res.json();
+    console.log(json)
+}
+
+async function deleteGuildCommands() {
     const url = `https://discord.com/api/v10/applications/${applicationId}/commands/1009487002787393586`;
     const res = await sendCommand(url, 'DELETE');
     const json = await res.json();

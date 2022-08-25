@@ -7,12 +7,8 @@
  *
  * Learn more at https://developers.cloudflare.com/workers/
  */
-import {Router, IHTTPMethods} from 'itty-router'
-import {
-    verifyKey,
-    InteractionType,
-    InteractionResponseType
-} from 'discord-interactions'
+import {IHTTPMethods, Router} from 'itty-router'
+import {InteractionResponseType, InteractionType, verifyKey} from 'discord-interactions'
 
 const router = Router<Request, IHTTPMethods>()
 
@@ -28,8 +24,17 @@ export interface Env {
     DISCORD_PUBLIC_KEY: string;
 }
 
+export type Command = {
+    name: string,
+    description: string,
+    value: string
+}
+
 type DiscordRequest = {
-    type: InteractionType
+    type: InteractionType,
+    data: {
+        options: [Command]
+    }
 }
 
 type DiscordResponse = {
@@ -61,6 +66,18 @@ router.post('/', async (request: Request, _env) => {
             type: InteractionResponseType.PONG,
         });
     }
+
+    if (message.type === InteractionType.APPLICATION_COMMAND) {
+        const word: string = message.data.options[0].value;
+        return new JsonResponse({
+            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+            data: {
+                content: "you sent me a word: " + word
+            }
+        });
+    }
+
+
     return new JsonResponse({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
