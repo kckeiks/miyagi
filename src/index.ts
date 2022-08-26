@@ -9,20 +9,10 @@
  */
 import {IHTTPMethods, Router} from 'itty-router'
 import {InteractionResponseType, InteractionType, verifyKey} from 'discord-interactions'
+import lookup from './webster'
+import {Definition} from "./dictionary";
 
 const router = Router<Request, IHTTPMethods>()
-
-export interface Env {
-    // Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
-    // MY_KV_NAMESPACE: KVNamespace;
-    //
-    // Example binding to Durable Object. Learn more at https://developers.cloudflare.com/workers/runtime-apis/durable-objects/
-    // MY_DURABLE_OBJECT: DurableObjectNamespace;
-    //
-    // Example binding to R2. Learn more at https://developers.cloudflare.com/workers/runtime-apis/r2/
-    // MY_BUCKET: R2Bucket;
-    DISCORD_PUBLIC_KEY: string;
-}
 
 export type Command = {
     name: string,
@@ -54,11 +44,7 @@ class JsonResponse extends Response {
     }
 }
 
-router.get('/', async (_request, _env) => {
-    return new Response("Cheers!");
-})
-
-router.post('/', async (request: Request, _env) => {
+router.post('/', async (request: Request, env: Env) => {
     const message: DiscordRequest = await request.json();
 
     if (message.type === InteractionType.PING) {
@@ -69,14 +55,19 @@ router.post('/', async (request: Request, _env) => {
 
     if (message.type === InteractionType.APPLICATION_COMMAND) {
         const word: string = message.data.options[0].value;
+        try {
+            var def: Definition = await lookup(word, env.WEBSTER_API_KEY);
+        } catch (e) {
+            console.log("Webster lookup failed")
+            return new Response('Failed to get the definition.', {status: 500});
+        }
         return new JsonResponse({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {
-                content: "you sent me a word: " + word
+                content: `${word}: ${def[0].shortdef}.\nNow you must remember the word!`
             }
         });
     }
-
 
     return new JsonResponse({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
@@ -85,6 +76,21 @@ router.post('/', async (request: Request, _env) => {
         }
     });
 })
+
+router.all('*', () => new Response('Not Found.', {status: 404}));
+
+export interface Env {
+    // Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
+    // MY_KV_NAMESPACE: KVNamespace;
+    //
+    // Example binding to Durable Object. Learn more at https://developers.cloudflare.com/workers/runtime-apis/durable-objects/
+    // MY_DURABLE_OBJECT: DurableObjectNamespace;
+    //
+    // Example binding to R2. Learn more at https://developers.cloudflare.com/workers/runtime-apis/r2/
+    // MY_BUCKET: R2Bucket;
+    DISCORD_PUBLIC_KEY: string;
+    WEBSTER_API_KEY: string,
+}
 
 export default {
     async fetch(
