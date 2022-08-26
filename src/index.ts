@@ -69,12 +69,7 @@ router.post('/', async (request: Request, env: Env) => {
         });
     }
 
-    return new JsonResponse({
-        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-        data: {
-            content: "howdy"
-        }
-    });
+    return new Response('Bad Request.', {status: 400});
 })
 
 router.all('*', () => new Response('Not Found.', {status: 404}));
