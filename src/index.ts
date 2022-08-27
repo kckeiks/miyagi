@@ -11,6 +11,7 @@ import {IHTTPMethods, Router} from 'itty-router'
 import {InteractionResponseType, InteractionType, verifyKey} from 'discord-interactions'
 import lookup from './webster'
 import {Definition} from "./dictionary";
+import fetch from 'node-fetch';
 
 const router = Router<Request, IHTTPMethods>()
 
@@ -44,6 +45,20 @@ class JsonResponse extends Response {
     }
 }
 
+export interface Env {
+    // Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
+    WORDS: KVNamespace;
+    //
+    // Example binding to Durable Object. Learn more at https://developers.cloudflare.com/workers/runtime-apis/durable-objects/
+    // MY_DURABLE_OBJECT: DurableObjectNamespace;
+    //
+    // Example binding to R2. Learn more at https://developers.cloudflare.com/workers/runtime-apis/r2/
+    // MY_BUCKET: R2Bucket;
+    WORDS_WEBHOOK_URL: string;
+    DISCORD_PUBLIC_KEY: string;
+    WEBSTER_API_KEY: string;
+}
+
 router.post('/', async (request: Request, env: Env) => {
     const message: DiscordRequest = await request.json();
 
@@ -56,7 +71,7 @@ router.post('/', async (request: Request, env: Env) => {
     if (message.type === InteractionType.APPLICATION_COMMAND) {
         const word: string = message.data.options[0].value;
         // Store word.
-        await env.WORDS.put('fausto', Date.now().toString());
+        await env.WORDS.put(word, Date.now().toString());
         // Return definition.
         try {
             var def: Definition = await lookup(word, env.WEBSTER_API_KEY);
@@ -78,17 +93,28 @@ router.post('/', async (request: Request, env: Env) => {
 
 router.all('*', () => new Response('Not Found.', {status: 404}));
 
-export interface Env {
-    // Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
-    WORDS: KVNamespace;
-    //
-    // Example binding to Durable Object. Learn more at https://developers.cloudflare.com/workers/runtime-apis/durable-objects/
-    // MY_DURABLE_OBJECT: DurableObjectNamespace;
-    //
-    // Example binding to R2. Learn more at https://developers.cloudflare.com/workers/runtime-apis/r2/
-    // MY_BUCKET: R2Bucket;
-    DISCORD_PUBLIC_KEY: string;
-    WEBSTER_API_KEY: string,
+async function sendChallenge(env: Env): Promise<void> {
+    const words = await env.WORDS.list();
+
+    if (words.keys.length == 0) {
+        console.log('No words found.');
+        return;
+    }
+
+    const word = words.keys[Math.floor(Math.random() * words.keys.length)];
+    const res: Response = await fetch(
+        env.WORDS_WEBHOOK_URL,
+        {
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            method: 'POST',
+            body: `{"content": "Define ${word.name}."}`,
+        });
+
+    if (!res.ok) {
+        console.log(res.statusText);
+    }
 }
 
 export default {
@@ -112,5 +138,9 @@ export default {
             }
         }
         return router.handle(request, env);
+    },
+
+    async scheduled(event: Event, env: Env, ctx: ExecutionContext) {
+        ctx.waitUntil(sendChallenge(env));
     },
 };
