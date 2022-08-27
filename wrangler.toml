@@ -2,3 +2,5 @@ name = "miyagi"
 main = "src/index.ts"
 compatibility_date = "2022-08-16"
 node_compat = true
+
+kv_namespaces = [{ binding = "WORDS", id = "d557089e1e294fa2aad02639bcd4e52c", preview_id = "9101a70a96564d519c5195d540f7cbe0" }]

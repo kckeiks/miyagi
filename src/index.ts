@@ -55,12 +55,16 @@ router.post('/', async (request: Request, env: Env) => {
 
     if (message.type === InteractionType.APPLICATION_COMMAND) {
         const word: string = message.data.options[0].value;
+        // Store word.
+        await env.WORDS.put('fausto', Date.now().toString());
+        // Return definition.
         try {
             var def: Definition = await lookup(word, env.WEBSTER_API_KEY);
         } catch (e) {
             console.log("Webster lookup failed")
             return new Response('Failed to get the definition.', {status: 500});
         }
+
         return new JsonResponse({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {
@@ -76,7 +80,7 @@ router.all('*', () => new Response('Not Found.', {status: 404}));
 
 export interface Env {
     // Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
-    // MY_KV_NAMESPACE: KVNamespace;
+    WORDS: KVNamespace;
     //
     // Example binding to Durable Object. Learn more at https://developers.cloudflare.com/workers/runtime-apis/durable-objects/
     // MY_DURABLE_OBJECT: DurableObjectNamespace;
