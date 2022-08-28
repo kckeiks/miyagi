@@ -68,7 +68,7 @@ router.post('/', async (request: Request, env: Env) => {
     }
 
     if (message.type === InteractionType.APPLICATION_COMMAND) {
-        const word: string = message.data.options[0].value;
+        const word: string = message.data.options[0].value.toLowerCase();
         // Store word.
         await env.WORDS.put(word, Date.now().toString());
         // Return definition.
