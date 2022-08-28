@@ -1,7 +1,5 @@
-export type Definition = [
+export type Definition =
     {
-        word: string,
         partOfSpeech: string,
-        shortdef: [string]
+        shortdefs: [string]
     }
-]

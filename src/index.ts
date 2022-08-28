@@ -57,16 +57,28 @@ router.post('/', async (request: Request, env: Env) => {
         await env.WORDS.put(word, Date.now().toString());
         // Return definition.
         try {
-            var def: Definition = await lookup(word, env.WEBSTER_API_KEY);
+            var defs: Definition[] = await lookup(word, env.WEBSTER_API_KEY);
         } catch (e) {
             console.log("Webster lookup failed")
             return new Response('Failed to get the definition.', {status: 500});
         }
 
+        const title: string = `**${word}**`
+        let body: string = '';
+
+        defs.forEach((def) => {
+            let shortdefs: string = '';
+            def.shortdefs.forEach((defStr) => {
+                shortdefs += `> - ${defStr}\n`;
+            });
+
+            body += `__${def.partOfSpeech}__\n\n${shortdefs}\n`;
+        });
+
         return new JsonResponse({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {
-                content: `${word}: ${def[0].shortdef}.\nNow you must remember the word!`
+                content: `${title}\n\n${body}\n\nYou trust the quality of what you know, not quantity.`
             }
         });
     }

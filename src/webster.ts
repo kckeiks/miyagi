@@ -1,18 +1,18 @@
-import {Definition} from './dictionary';
+import {Definition, Definitions} from './dictionary';
 
-type WebsterSchema = [
-    {
-        meta: string,
-        fl: string,
-        shortdef: [string],
-    }
-]
+type WebsterSchema = [WebsterDefinition]
+
+type WebsterDefinition = {
+    meta: string,
+    fl: string,
+    shortdef: [string],
+}
 
 /**
  * Looks up word using Webster API.
  * @throws {Error}
  */
-export default async function lookup(word: string, key: string): Promise<Definition> {
+export default async function lookup(word: string, key: string): Promise<Definition[]> {
     const res: Response = await fetch(
         `https://www.dictionaryapi.com/api/v3/references/collegiate/json/${word}?key=${key}`,
         {
@@ -28,13 +28,14 @@ export default async function lookup(word: string, key: string): Promise<Definit
     }
 
     const json: WebsterSchema = await res.json();
-    const result: Definition = [
-        {
-            word: word,
-            partOfSpeech: json[0].fl,
-            shortdef: [json[0].shortdef[0]]
-        }
-    ];
+    const result: Definition[] = [];
+
+    json.forEach((def) => {
+        result.push({
+            partOfSpeech: def.fl,
+            shortdefs: def.shortdef
+        });
+    });
 
     return result;
 }
