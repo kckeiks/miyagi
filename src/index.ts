@@ -87,6 +87,7 @@ router.post('/', async (request: Request, env: Env) => {
         });
     }
 
+    console.log('Invalid message type.')
     return new Response('Bad Request.', {status: 400});
 })
 
@@ -112,7 +113,7 @@ async function sendChallenge(env: Env): Promise<void> {
         });
 
     if (!res.ok) {
-        console.log(res.statusText);
+        console.log(`Failed to send challenge: ${res.statusText}`)
     }
 }
 
@@ -133,6 +134,7 @@ export default {
                 env.DISCORD_PUBLIC_KEY
             );
             if (!isValidRequest) {
+                console.log('Bad request signature.')
                 return new Response('Bad request signature.', {status: 401});
             }
         }
