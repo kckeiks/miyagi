@@ -30,11 +30,15 @@ export default async function lookup(word: string, key: string): Promise<Definit
     const json: WebsterSchema = await res.json();
     const result: Definition[] = [];
 
+
     json.forEach((def) => {
-        result.push({
-            partOfSpeech: def.fl,
-            shortdefs: def.shortdef
-        });
+        // If definition was not found, Webster API returns string array with suggestions.
+        if (def.shortdef) {
+            result.push({
+                partOfSpeech: def.fl,
+                shortdefs: def.shortdef
+            });
+        }
     });
 
     return result;
