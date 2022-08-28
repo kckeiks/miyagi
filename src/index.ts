@@ -88,7 +88,7 @@ router.post('/', async (request: Request, env: Env) => {
         return new JsonResponse({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {
-                content: `${title}\n\n${body}\n\nYou trust the quality of what you know, not quantity.`
+                content: `${title}\n\n${body}\nYou trust the quality of what you know, not quantity.`
             }
         });
     }
@@ -115,7 +115,7 @@ async function sendChallenge(env: Env): Promise<void> {
                 'Content-Type': 'application/json',
             },
             method: 'POST',
-            body: `{"content": "Define ${word.name}."}`,
+            body: `{"content": "Define **${word.name}**."}`,
         });
 
     if (!res.ok) {
