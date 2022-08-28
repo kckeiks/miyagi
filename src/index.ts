@@ -55,12 +55,22 @@ router.post('/', async (request: Request, env: Env) => {
         const word: string = message.data.options[0].value.toLowerCase();
         // Store word.
         await env.WORDS.put(word, Date.now().toString());
-        // Return definition.
+
         try {
             var defs: Definition[] = await lookup(word, env.WEBSTER_API_KEY);
         } catch (e) {
             console.log("Webster lookup failed")
             return new Response('Failed to get the definition.', {status: 500});
+        }
+
+        if (defs.length == 0) {
+            console.log(`No definitions for ${word}`)
+            return new JsonResponse({
+                type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                data: {
+                    content: `No definitions for ${word}`,
+                }
+            });
         }
 
         const title: string = `**${word}**`
