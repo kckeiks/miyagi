@@ -11,7 +11,6 @@ import {IHTTPMethods, Router} from 'itty-router'
 import {InteractionResponseType, InteractionType, verifyKey} from 'discord-interactions'
 import lookup from './webster'
 import {Definition} from "./dictionary";
-import fetch from 'node-fetch';
 
 const router = Router<Request, IHTTPMethods>()
 

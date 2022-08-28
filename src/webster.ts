@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import {Definition} from './dictionary';
 
 export type WebsterSchema = [
