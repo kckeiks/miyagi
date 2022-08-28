@@ -1,6 +1,6 @@
 import {Definition} from './dictionary';
 
-export type WebsterSchema = [
+type WebsterSchema = [
     {
         meta: string,
         fl: string,
