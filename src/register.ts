@@ -1,31 +1,21 @@
 import {STASH} from './commands.js';
-
-/**
- * This file is meant to be run from the command line, and is not used by the
- * application server.  It's allowed to use node.js primitives, and only needs
- * to be run once.
- */
-
-/* eslint-disable no-undef */
+import fetch from 'node-fetch';
 
 const token = process.env.DISCORD_TOKEN;
 const applicationId = process.env.DISCORD_APPLICATION_ID;
 const testGuildId = process.env.DISCORD_TEST_GUILD_ID;
+const commandId = process.env.COMMAND_ID;
 
 if (!token) {
     throw new Error('The DISCORD_TOKEN environment variable is required.');
 }
+
 if (!applicationId) {
     throw new Error(
         'The DISCORD_APPLICATION_ID environment variable is required.'
     );
 }
 
-/**
- * Register all commands with a specific guild/server. Useful during initial
- * development and testing.
- */
-// eslint-disable-next-line no-unused-vars
 async function registerGuildCommands() {
     if (!testGuildId) {
         throw new Error(
@@ -33,7 +23,7 @@ async function registerGuildCommands() {
         );
     }
     const url = `https://discord.com/api/v10/applications/${applicationId}/guilds/${testGuildId}/commands`;
-    const res = await registerCommands(url);
+    const res = await sendCommand(url, 'PUT', JSON.stringify([STASH]));
     const json = await res.json();
     console.log(json);
     json.forEach(async (cmd) => {
@@ -46,75 +36,51 @@ async function registerGuildCommands() {
     });
 }
 
-/**
- * Register all commands globally.  This can take o(minutes), so wait until
- * you're sure these are the commands you want.
- */
-// eslint-disable-next-line no-unused-vars
-async function registerGlobalCommands() {
-    const url = `https://discord.com/api/v10/applications/${applicationId}/commands`;
-    await registerCommands(url);
-}
-
-async function registerCommands(url: string) {
-    const response = await fetch(url, {
-        headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bot ${token}`,
-        },
-        method: 'PUT',
-        body: JSON.stringify([STASH]),
-    });
-
-    if (response.ok) {
-        console.log('Registered all commands');
-    } else {
-        console.error('Error registering commands');
-        const text = await response.text();
-        console.error(text);
-    }
-    return response;
-}
-
 async function getGuildCommands() {
-    const url = `https://discord.com/api/v10/applications/${applicationId}/commands/1009487002787393586`;
+    const url = `https://discord.com/api/v10/applications/${applicationId}/guilds/${testGuildId}/commands`;
     const res = await sendCommand(url, 'GET');
     const json = await res.json();
     console.log(json)
 }
 
 async function deleteGuildCommands() {
-    const url = `https://discord.com/api/v10/applications/${applicationId}/commands/1009487002787393586`;
+    if (!commandId) {
+        throw new Error('The DISCORD_TOKEN environment variable is required.');
+    }
+    const url = `https://discord.com/api/v10/applications/${applicationId}/commands/${commandId}`;
     const res = await sendCommand(url, 'DELETE');
     const json = await res.json();
     console.log(json)
 }
 
-async function sendCommand(url: string, method: string) {
-    const response = await fetch(url, {
+async function sendCommand(url, method, body?) {
+    let options = {
         headers: {
             'Content-Type': 'application/json',
             Authorization: `Bot ${token}`,
         },
         method: method,
-    });
+    };
 
-    if (response.ok) {
-        console.log('fetch succeeded');
-    } else {
+    if (typeof body !== 'undefined') {
+        options["body"] = body;
+    }
+
+    const res = await fetch(url, options);
+
+    if (!res.ok) {
         console.error('fetch failed');
-        const text = await response.text();
+        const text = await res.text();
         console.error(text);
     }
-    return response;
+    return res;
 }
 
-async function run() {
-    // await registerGlobalCommands();
-    await registerGuildCommands();
-    // await getGuildCommands()
-}
-
-run();
-
-
+getGuildCommands().then(
+    (_) => {
+        console.log('success')
+    },
+    (reason) => {
+        console.log(reason)
+    },
+);
